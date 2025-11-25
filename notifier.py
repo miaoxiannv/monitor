@@ -2,6 +2,8 @@
 钉钉通知模块 - 简单可靠的推送实现
 """
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import socket
 import time
 from datetime import datetime
@@ -16,6 +18,38 @@ class DingTalkNotifier:
     def __init__(self, webhook_url):
         self.webhook_url = webhook_url
         self.hostname = socket.gethostname()
+        # 创建带重试策略的Session
+        self.session = self._create_session()
+
+    def _create_session(self):
+        """创建增强的HTTP会话"""
+        session = requests.Session()
+
+        # 配置重试策略
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,  # 1秒、2秒、4秒递增
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["POST"]
+        )
+
+        adapter = HTTPAdapter(
+            max_retries=retry_strategy,
+            pool_connections=1,
+            pool_maxsize=1
+        )
+
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+
+        # 设置默认请求头
+        session.headers.update({
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Connection': 'close'  # 不使用keep-alive，避免连接复用问题
+        })
+
+        return session
 
     def send(self, message, retry=3):
         """
@@ -41,10 +75,11 @@ class DingTalkNotifier:
 
         for attempt in range(retry):
             try:
-                response = requests.post(
+                response = self.session.post(
                     self.webhook_url,
                     json=payload,
-                    timeout=10
+                    timeout=(5, 10),  # (连接超时, 读取超时)
+                    verify=True  # 验证SSL证书
                 )
 
                 if response.status_code == 200:
@@ -57,12 +92,26 @@ class DingTalkNotifier:
                 else:
                     logger.error(f"钉钉请求失败: HTTP {response.status_code}")
 
+            except requests.exceptions.SSLError as e:
+                logger.error(f"SSL证书验证失败 (尝试 {attempt + 1}/{retry}): {e}")
+                logger.warning("提示: 如果在企业网络环境，可能需要配置代理或信任证书")
+
+            except requests.exceptions.ConnectionError as e:
+                logger.error(f"连接错误 (尝试 {attempt + 1}/{retry}): {e}")
+                logger.warning("提示: 检查网络连接或防火墙设置")
+
+            except requests.exceptions.Timeout as e:
+                logger.error(f"请求超时 (尝试 {attempt + 1}/{retry}): {e}")
+
             except requests.RequestException as e:
                 logger.error(f"钉钉发送异常 (尝试 {attempt + 1}/{retry}): {e}")
 
             if attempt < retry - 1:
-                time.sleep(5)  # 重试前等待5秒
+                wait_time = (attempt + 1) * 3  # 递增等待: 3秒、6秒、9秒
+                logger.info(f"等待 {wait_time} 秒后重试...")
+                time.sleep(wait_time)
 
+        logger.error("钉钉通知发送失败，已达到最大重试次数")
         return False
 
     def send_process_alert(self, process_name, status="stopped"):
