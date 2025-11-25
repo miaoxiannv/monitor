@@ -5,7 +5,7 @@
   ],
   "notification": {
     "dingtalk_webhook": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_ACCESS_TOKEN_HERE",
-    "dingtalk_secret": "YOUR_SECRET_HERE"
+    "dingtalk_secret": "YOUR_SECRET_HERE_IF_USING_SIGN"
   },
   "heartbeat": {
     "enabled": true,
