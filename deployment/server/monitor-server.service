@@ -1,0 +1,21 @@
+[Unit]
+Description=Process Monitor Server
+After=network.target
+
+[Service]
+Type=simple
+User=monitor
+WorkingDirectory=/opt/monitor-server
+ExecStart=/usr/bin/python3 /opt/monitor-server/main.py
+Restart=always
+RestartSec=10
+
+# 环境变量
+Environment="PYTHONUNBUFFERED=1"
+
+# 日志
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
