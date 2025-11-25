@@ -37,9 +37,16 @@ pip install -r requirements.txt
 3. 设置检查周期为 **1分钟**
 4. 复制 **Ping URL**（格式：`https://hc-ping.com/your-uuid-here`）
 
-### 4. 编辑配置文件
+### 4. 配置文件设置
 
-编辑 `config.json`：
+**首次使用需要创建配置文件：**
+
+```bash
+# 复制示例配置
+cp config.example.json config.json
+```
+
+然后编辑 `config.json` 填入你的配置：
 
 ```json
 {
@@ -48,7 +55,8 @@ pip install -r requirements.txt
     "chrome.exe"
   ],
   "notification": {
-    "dingtalk_webhook": "你的钉钉Webhook URL"
+    "dingtalk_webhook": "你的钉钉Webhook URL",
+    "dingtalk_secret": "你的Secret密钥（如果使用加签）"
   },
   "heartbeat": {
     "enabled": true,
@@ -61,6 +69,14 @@ pip install -r requirements.txt
   "web_host": "127.0.0.1"
 }
 ```
+
+**钉钉配置说明：**
+- **使用加签**：需要配置 `dingtalk_secret`（以SEC开头）
+- **使用关键词/IP白名单**：不需要配置 `dingtalk_secret`
+
+详细配置指南请查看：[DINGTALK_SETUP.md](DINGTALK_SETUP.md)
+
+⚠️ **重要：** `config.json` 包含敏感信息，已被 `.gitignore` 忽略，不会提交到 Git
 
 ### 5. 测试运行
 
