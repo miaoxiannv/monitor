@@ -1,11 +1,16 @@
 """
 钉钉通知模块 - 简单可靠的推送实现
+支持加签安全设置
 """
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import socket
 import time
+import hmac
+import hashlib
+import base64
+import urllib.parse
 from datetime import datetime
 import logging
 
@@ -15,8 +20,9 @@ logger = logging.getLogger(__name__)
 class DingTalkNotifier:
     """钉钉机器人通知器"""
 
-    def __init__(self, webhook_url):
+    def __init__(self, webhook_url, secret=None):
         self.webhook_url = webhook_url
+        self.secret = secret  # 加签密钥
         self.hostname = socket.gethostname()
         # 创建带重试策略的Session
         self.session = self._create_session()
@@ -51,6 +57,45 @@ class DingTalkNotifier:
 
         return session
 
+    def _get_signed_url(self):
+        """
+        生成带签名的Webhook URL（如果配置了secret）
+
+        钉钉加签算法：
+        1. timestamp = 当前时间戳（毫秒）
+        2. string_to_sign = timestamp + "\n" + secret
+        3. hmac_code = HmacSHA256(string_to_sign, secret)
+        4. sign = Base64(hmac_code)
+        5. url = webhook + "&timestamp=" + timestamp + "&sign=" + urlEncode(sign)
+        """
+        if not self.secret:
+            # 没有配置secret，直接返回原始URL
+            return self.webhook_url
+
+        # 当前时间戳（毫秒）
+        timestamp = str(round(time.time() * 1000))
+
+        # 构造签名字符串
+        secret_enc = self.secret.encode('utf-8')
+        string_to_sign = f'{timestamp}\n{self.secret}'
+        string_to_sign_enc = string_to_sign.encode('utf-8')
+
+        # 使用HmacSHA256算法计算签名
+        hmac_code = hmac.new(
+            secret_enc,
+            string_to_sign_enc,
+            digestmod=hashlib.sha256
+        ).digest()
+
+        # Base64编码
+        sign = urllib.parse.quote_plus(base64.b64encode(hmac_code))
+
+        # 构造最终URL
+        signed_url = f"{self.webhook_url}&timestamp={timestamp}&sign={sign}"
+
+        logger.debug(f"生成签名URL: timestamp={timestamp}")
+        return signed_url
+
     def send(self, message, retry=3):
         """
         发送钉钉通知
@@ -75,8 +120,11 @@ class DingTalkNotifier:
 
         for attempt in range(retry):
             try:
+                # 获取签名URL（如果配置了secret）
+                url = self._get_signed_url()
+
                 response = self.session.post(
-                    self.webhook_url,
+                    url,  # 使用签名URL
                     json=payload,
                     timeout=(5, 10),  # (连接超时, 读取超时)
                     verify=True  # 验证SSL证书
@@ -149,5 +197,7 @@ class DingTalkNotifier:
 
 def create_notifier(config):
     """从配置创建通知器"""
-    webhook = config.get("notification", {}).get("dingtalk_webhook", "")
-    return DingTalkNotifier(webhook)
+    notification_config = config.get("notification", {})
+    webhook = notification_config.get("dingtalk_webhook", "")
+    secret = notification_config.get("dingtalk_secret", "")  # 读取加签密钥
+    return DingTalkNotifier(webhook, secret)

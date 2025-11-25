@@ -4,7 +4,8 @@
     "chrome.exe"
   ],
   "notification": {
-    "dingtalk_webhook": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_ACCESS_TOKEN_HERE"
+    "dingtalk_webhook": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_ACCESS_TOKEN_HERE",
+    "dingtalk_secret": "YOUR_SECRET_HERE"
   },
   "heartbeat": {
     "enabled": true,
