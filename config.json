@@ -1,0 +1,18 @@
+{
+  "processes": [
+    "notepad.exe",
+    "chrome.exe"
+  ],
+  "notification": {
+    "dingtalk_webhook": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_ACCESS_TOKEN_HERE"
+  },
+  "heartbeat": {
+    "enabled": true,
+    "url": "https://hc-ping.com/YOUR_UUID_HERE",
+    "interval": 30
+  },
+  "check_interval": 30,
+  "alert_cooldown": 300,
+  "web_port": 8080,
+  "web_host": "127.0.0.1"
+}
