@@ -1,7 +1,21 @@
 {
-  "processes": [
-    "notepad.exe",
-    "chrome.exe"
+  "monitors": [
+    {
+      "name": "示例服务器1",
+      "enabled": true,
+      "host": "192.168.1.100",
+      "port": 8888,
+      "processes": ["nginx", "mysql", "redis-server"],
+      "description": "生产环境Web服务器"
+    },
+    {
+      "name": "示例服务器2",
+      "enabled": false,
+      "host": "192.168.1.101",
+      "port": 8888,
+      "processes": ["python3", "nodejs"],
+      "description": "开发环境"
+    }
   ],
   "notification": {
     "dingtalk_webhook": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_ACCESS_TOKEN_HERE",
@@ -15,5 +29,5 @@
   "check_interval": 30,
   "alert_cooldown": 300,
   "web_port": 8080,
-  "web_host": "127.0.0.1"
+  "web_host": "0.0.0.0"
 }

@@ -163,11 +163,24 @@ class DingTalkNotifier:
         return False
 
     def send_process_alert(self, process_name, status="stopped"):
-        """发送进程告警"""
+        """发送本地进程告警"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         message = f"""【进程告警】
 主机: {self.hostname}
+进程: {process_name}
+状态: {status}
+时间: {timestamp}"""
+
+        return self.send(message)
+
+    def send_process_alert_remote(self, monitor_name, host, process_name, status="stopped"):
+        """发送远程进程告警"""
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        message = f"""【进程告警】
+监控目标: {monitor_name}
+主机地址: {host}
 进程: {process_name}
 状态: {status}
 时间: {timestamp}"""
